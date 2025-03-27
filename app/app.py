@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 S3_BUCKET = os.environ.get("S3_BUCKET")
 S3_REGION = os.environ.get("AWS_REGION", "eu-west-1")
-CLOUDFRONT_DOMAIN = os.environ.get("CLOUDFRONT_DOMAIN")  # opcional para redirigir
+CLOUDFRONT_DOMAIN = os.environ.get("CLOUDFRONT_DOMAIN")
 
 s3 = boto3.client("s3", region_name=S3_REGION)
 
@@ -35,17 +35,23 @@ def generate_pdf():
 
 @app.route("/historial")
 def historial():
-    response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix="pdfs/")
-    archivos = []
+    if not S3_BUCKET or not CLOUDFRONT_DOMAIN:
+        return f"Error: S3_BUCKET={S3_BUCKET}, CLOUDFRONT_DOMAIN={CLOUDFRONT_DOMAIN}", 500
 
-    if "Contents" in response:
-        for obj in response["Contents"]:
-            archivos.append({
-                "nombre": obj["Key"].replace("pdfs/", ""),
-                "url": f"http://{CLOUDFRONT_DOMAIN}/{obj['Key']}"
-            })
+    try:
+        response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix="pdfs/")
+        archivos = []
 
-    return render_template("historial.html", archivos=archivos)
+        if "Contents" in response:
+            for obj in response["Contents"]:
+                archivos.append({
+                    "nombre": obj["Key"].replace("pdfs/", ""),
+                    "url": f"http://{CLOUDFRONT_DOMAIN}/{obj['Key']}"
+                })
+
+        return render_template("historial.html", archivos=archivos)
+    except Exception as e:
+        return f"Error accediendo a S3: {str(e)}", 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
