@@ -84,10 +84,39 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_iam_role_policy_attachment" "ecs_s3_access" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecsTaskRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_role_s3" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+
 resource "aws_ecs_task_definition" "pdf_task" {
   family                   = "pdf-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
+  task_role_arn = aws_iam_role.ecs_task_role.arn
   cpu                      = 256
   memory                   = 512
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
@@ -103,7 +132,8 @@ resource "aws_ecs_task_definition" "pdf_task" {
       }],
       environment = [
         { name = "S3_BUCKET", value = var.bucket_name },
-        { name = "CLOUDFRONT_DOMAIN", value = aws_cloudfront_distribution.cdn.domain_name }
+        { name = "CLOUDFRONT_DOMAIN", value = aws_cloudfront_distribution.cdn.domain_name },
+        { name = "AWS_REGION", value = var.region }
       ]
     }
   ])
