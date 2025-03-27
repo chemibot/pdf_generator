@@ -12,6 +12,31 @@ resource "aws_s3_bucket" "pdf_bucket" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket_policy" "pdf_bucket_policy" {
+  bucket = aws_s3_bucket.pdf_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "AllowCloudFrontAccess"
+        Effect    = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.pdf_bucket.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = "arn:aws:cloudfront::337909777634:distribution/${aws_cloudfront_distribution.cdn.id}"
+          }
+        }
+      }
+    ]
+  })
+}
+
+
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "pdf-demo-oac"
   origin_access_control_origin_type = "s3"
@@ -117,7 +142,7 @@ resource "aws_ecs_task_definition" "pdf_task" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   task_role_arn = aws_iam_role.ecs_task_role.arn
-  cpu                      = 256
+  cpu                      = 256  
   memory                   = 512
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
