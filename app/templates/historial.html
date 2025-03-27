@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Historial de PDFs</title>
+</head>
+<body>
+    <h1>📄 Historial de PDFs generados</h1>
+    <ul>
+        {% for pdf in archivos %}
+            <li><a href="{{ pdf.url }}" target="_blank">{{ pdf.nombre }}</a></li>
+        {% endfor %}
+    </ul>
+    <br>
+    <a href="/">⬅️ Volver</a>
+</body>
+</html>

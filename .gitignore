@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Env files
+.env
+
+# Archivos comprimidos
+*.zip
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+
+# Node modules (si usas alguno en el futuro)
+node_modules/
+
+# Logs
+*.log
